@@ -9,6 +9,5 @@ Being elastalert2 at its core, results are pushed to Elasticsearch in the "elast
 A default kibana interface is provided for testing purposes.
 
 ## How to use
-Edit and .env file containing ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD.
-Run with docker-compose
+Edit an .env file containing ELASTICSEARCH_USERNAME and ELASTICSEARCH_PASSWORD, then run with docker-compose.
 
