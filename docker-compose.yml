@@ -1,0 +1,67 @@
+# Elasticsearch
+# TODO:
+#  - swag reverse proxy with tls
+#  - wireguard for communicating with customer
+# way too heavy on I/O when related to the actual benefits elastic provides in small environments
+# not very interested in this, just wanted to prove I could make a rule based HIDS work
+
+version: '2.2'
+
+# Analysis center
+services:
+  elasticsearch:
+    image: elasticsearch:7.17.9
+    restart: always
+    container_name: elasticsearch
+    environment:
+      - http.host=0.0.0.0
+      # Ensure that the node does not inadvertently connect to other clusters
+      - discovery.type=single-node
+      - script.allowed_types=inline
+      - thread_pool.search.queue_size=100000
+      - thread_pool.write.queue_size=10000
+      # Enable minimal security (aka passwords for built-in users)
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
+    mem_limit: 1024M
+    cpus: 0.7
+    volumes:
+      - elasticsearch-database:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - elastic
+
+  kibana:
+    image: kibana:7.17.9
+    container_name: kibana
+    restart: always
+    environment:
+      - SERVER_NAME=127.0.0.1
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME="${ELASTICSEARCH_USERNAME}"
+      - ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD}"
+    ports:
+      - "5601:5601"
+    networks:
+      - elastic
+    depends_on:
+      - elasticsearch
+
+  sigmalert:
+    build: ./analysis/sigmalert/
+    container_name: sigmalert
+    restart: always
+    environment:
+      ELASTICSEARCH_USERNAME: "${ELASTICSEARCH_USERNAME}"
+      ELASTICSEARCH_PASSWORD: "${ELASTICSEARCH_PASSWORD}"
+#      DB_USER: "${DB_USER}"
+#      DB_PASSWORD: "${DB_PASSWORD}"
+    networks:
+      - elastic
+#      - threat-intelligence
+    depends_on:
+      - elasticsearch
+
+networks:
+  elastic:
